@@ -1,0 +1,29 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "==4.1"
+django-cors-headers = "*"
+djangorestframework-simplejwt = "*"
+psycopg2-binary = "*"
+whitenoise = "*"
+pillow = "*"
+django-filter = "*"
+pyjwt = "*"
+invoke = "*"
+django-extensions = "*"
+python-dateutil = "*"
+drf-yasg = "*"
+sendgrid = "*"
+certifi = "*"
+
+[dev-packages]
+black = "*"
+pre-commit = "*"
+click = "*"
+certifi = "*"
+[requires]
+python_version = "3.9"
+python_full_version = "3.9.16"
