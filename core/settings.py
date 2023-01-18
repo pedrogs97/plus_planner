@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +26,7 @@ SECRET_KEY = "django-insecure-eql!xz+rte1yzb(f!yzahu=5-#4wo&h(qml^=@z22egx1o)qq=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -37,13 +38,66 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # third
+    "corsheaders",
+    "rest_framework",
+    "rest_framework_roles",
+    "drf_yasg",
+    "django_filters",
+    "django_extensions",
     # author
     "plus_planner",
 ]
 
+AUTH_USER_MODEL = "plus_planner.models.account.User"
+
+DEFAULT_AUTHENTICATION_CLASSES = [
+    "rest_framework_simplejwt.authentication.JWTAuthentication",
+]
+
+DEFAULT_FILTER_BACKENDS = [
+    "django_filters.rest_framework.DjangoFilterBackend",
+]
+
+DEFAULT_PAGINATION_CLASS = "django_filters.rest_framework.DjangoFilterBackend"
+
+REST_FRAMEWORK = {
+    # Return 'error' key instead of non_field_errors_key
+    "NON_FIELD_ERRORS_KEY": "error",
+    "DEFAULT_AUTHENTICATION_CLASSES": DEFAULT_AUTHENTICATION_CLASSES,
+    "DEFAULT_FILTER_BACKENDS": DEFAULT_FILTER_BACKENDS,
+    "DEFAULT_PAGINATION_CLASS": DEFAULT_PAGINATION_CLASS,
+    "PAGE_SIZE": 12,
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    # "DEFAULT_THROTTLE_RATES": {"anon": "200/day", "user": "2000/day"},
+}
+
+REST_FRAMEWORK_ROLES = {
+    "ROLES": "myproject.roles.ROLES",
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=10),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
+    "ROTATE_REFRESH_TOKENS": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "DEFAULT_GENERATOR_CLASS": "rest_framework.schemas.generators.BaseSchemaGenerator",
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
+    }
+}
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -77,49 +131,39 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "PlusPlanner",
+        "USER": "postgres",
+        "PASSWORD": "Pedro97",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
     }
 }
 
-
 # Password validation
-# https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
-
+MIN_LENGTH_PASSWORD = 8
+SPECIAL_CHAR = ["!", "@", "#", "_", ".", "+", "-", "*"]
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+LANGUAGE_CODE = "en-us"
+
+TIME_ZONE = "America/Bahia"
 
 USE_I18N = True
 
+USE_L10N = True
+
 USE_TZ = True
 
+# LOCALE_PATHS = [
+#     os.path.join(BASE_DIR, "locale"),
+# ]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

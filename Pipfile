@@ -18,12 +18,14 @@ python-dateutil = "*"
 drf-yasg = "*"
 sendgrid = "*"
 certifi = "*"
+rest-framework-roles = "*"
 
 [dev-packages]
 black = "*"
 pre-commit = "*"
 click = "*"
 certifi = "*"
+
 [requires]
 python_version = "3.9"
 python_full_version = "3.9.16"
