@@ -1,84 +1,33 @@
-from django.contrib import auth
-from django.contrib.auth.models import Group, Permission
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_decode
+"""
+Account serializers
+"""
+# from django.contrib import auth
+# from django.contrib.auth.models import Group, Permission
+# from django.contrib.auth.tokens import PasswordResetTokenGenerator
+# from django.utils.encoding import force_str
+# from django.utils.http import urlsafe_base64_decode
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
-from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed
-
-from plus_planner.models.account import User
-from plus_planner.serializers.dynamic import DynamicFieldsModelSerializer
 from django.conf import settings
+from rest_framework import serializers
 
+# from rest_framework.exceptions import AuthenticationFailed
 
-class LoginSerializer(serializers.Serializer):
-    id = serializers.UUIDField(read_only=True)
-    username = serializers.CharField(max_length=255, read_only=True)
-    email = serializers.CharField(write_only=True)
-    password = serializers.CharField(write_only=True)
-    access_token = serializers.CharField(max_length=255, read_only=True)
-    refresh_token = serializers.CharField(max_length=255, read_only=True)
-
-    class Meta:
-        fields = [
-            "id",
-            "username",
-            "email",
-            "password",
-            "access_token",
-            "refresh_token",
-        ]
-
-    def validate(self, attrs):
-        email = attrs.get("email", "")
-        password = attrs.get("password", "")
-
-        try:
-            user = auth.authenticate(
-                username=User.objects.get(email=str(email)).username, password=password
-            )
-        except Exception:
-            try:
-                user = auth.authenticate(username=str(email), password=password)
-            except Exception:
-                try:
-                    user = auth.authenticate(username=email, password=password)
-                except Exception:
-                    user = auth.authenticate(
-                        username=User.objects.get(username=str(email)).email,
-                        password=password,
-                    )
-
-        if not user:
-            raise AuthenticationFailed(
-                "Credenciais inválidas. Usuário ou senha incorretos."
-            )
-
-        if not user.is_active:
-            raise AuthenticationFailed(
-                "Credenciais inválidas. Usuário ou senha incorretos."
-            )
-
-        if not user.is_superuser:
-            raise AuthenticationFailed(
-                "Credenciais inválidas. Usuário ou senha incorretos."
-            )
-
-        token = user.get_tokens_for_user()
-        return {
-            "id": user.id,
-            "username": user.username,
-            "access_token": token.get("access"),
-            "refresh_token": token.get("refresh"),
-        }
+from plus_planner.models.account import User, Role
+from plus_planner.serializers.dynamic import DynamicFieldsModelSerializer
 
 
 class UserSerializer(DynamicFieldsModelSerializer):
+    """
+    Serializer for create and update User
+    """
+
     class Meta:
+        """
+        Class Meta
+        """
+
         model = User
-        exclude = ["created_at", "updated_at"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def __init__(self, *args, **kwargs):
@@ -96,6 +45,9 @@ class UserSerializer(DynamicFieldsModelSerializer):
         )
 
     def validate_password(self, new_pass):
+        """
+        Validate password field before save
+        """
         if new_pass.isdigit():
             raise ValidationError(
                 _("This password is entirely numeric."),
@@ -117,79 +69,89 @@ class UserSerializer(DynamicFieldsModelSerializer):
             raise ValidationError(
                 _(
                     "This password has no special characters. It must contain at least special character. "
-                    + ",".join(self.special_chars, ",")
+                    + ",".join(self.special_chars)
                 ),
                 code="password_without_special_char",
             )
 
     def create(self, validated_data):
-        """
-        Create and return a new `User` instance, given the validated data.
-        :param validated_data:
-        """
-        if validated_data["is_staff"]:
-            validated_data.pop("is_staff")
-            user = User.objects.create_superuser(**validated_data)
-        else:
-            validated_data.pop("is_staff")
-            user = User.objects.create_user(**validated_data)
+        password = validated_data.pop("password")
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
         return user
 
     def update(self, instance, validated_data):
-        instance = super().update(instance, validated_data)
-        if "password" in validated_data:
+        password = validated_data.pop("password", None)
+        if password and instance.check_password(password):
             instance.set_password(validated_data["password"])
-            instance.save()
+        instance = super().update(instance, validated_data)
         return instance
 
 
-class EmailVerificationSerializer(serializers.Serializer):
-    token = serializers.CharField(max_length=555)
+class RolesSerialzier(serializers.Serializer):
+    """
+    Serializer for return one or all roles
+    """
+
+    id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=20)
 
     class Meta:
-        fields = ["token"]
+        """
+        Class Meta
+        """
 
-
-class PasswordResetLinkSerializer(serializers.Serializer):
-    email = serializers.EmailField(min_length=2)
-    username = serializers.CharField(min_length=3, max_length=255)
-
-    class Meta:
-        fields = ["email", "username"]
-
-
-class NewPasswordSerializer(serializers.Serializer):
-    password = serializers.CharField(min_length=6, max_length=68, write_only=True)
-    token = serializers.CharField(min_length=1, write_only=True)
-    uidb64 = serializers.CharField(min_length=1, write_only=True)
-
-    class Meta:
-        fields = ["password", "token", "id"]
+        model = Role
 
     def create(self, validated_data):
-        try:
-            password = validated_data.get("password")
-            token = validated_data.get("token")
-            uidb64 = validated_data.get("uidb64")
-            id = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(id=id)
-            if not PasswordResetTokenGenerator().check_token(user, token):
-                raise AuthenticationFailed("The reset link is invalid", 401)
-            user.set_password(password)
-            user.save()
+        """
+        Not implemented
+        """
+        return None
 
-            return {"message": "Password changed successfully"}
-        except User.DoesNotExist:
-            raise AuthenticationFailed("The reset link is invalid", 401)
+    def update(self, instance, validated_data):
+        """
+        Not implemented
+        """
+        return None
 
 
-class GroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Group
-        fields = "__all__"
+# class EmailVerificationSerializer(serializers.Serializer):
+#     token = serializers.CharField(max_length=555)
+
+#     class Meta:
+#         fields = ["token"]
 
 
-class PermissionSerializer(serializers.Serializer):
-    class Meta:
-        model = Permission
-        fields = "__all__"
+# class PasswordResetLinkSerializer(serializers.Serializer):
+#     email = serializers.EmailField(min_length=2)
+#     username = serializers.CharField(min_length=3, max_length=255)
+
+#     class Meta:
+#         fields = ["email", "username"]
+
+
+# class NewPasswordSerializer(serializers.Serializer):
+#     password = serializers.CharField(min_length=6, max_length=68, write_only=True)
+#     token = serializers.CharField(min_length=1, write_only=True)
+#     uidb64 = serializers.CharField(min_length=1, write_only=True)
+
+#     class Meta:
+#         fields = ["password", "token", "id"]
+
+#     def create(self, validated_data):
+#         try:
+#             password = validated_data.get("password")
+#             token = validated_data.get("token")
+#             uidb64 = validated_data.get("uidb64")
+#             id = force_str(urlsafe_base64_decode(uidb64))
+#             user = User.objects.get(id=id)
+#             if not PasswordResetTokenGenerator().check_token(user, token):
+#                 raise AuthenticationFailed("The reset link is invalid", 401)
+#             user.set_password(password)
+#             user.save()
+
+#             return {"message": "Password changed successfully"}
+#         except User.DoesNotExist:
+#             raise AuthenticationFailed("The reset link is invalid", 401)

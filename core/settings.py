@@ -21,7 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-eql!xz+rte1yzb(f!yzahu=5-#4wo&h(qml^=@z22egx1o)qq="
+SECRET_KEY = "=%u8t#$)rqtu^%b%)%s$xo=u!pwv)44_d(%^wc)51wa!)oogd*"
+
+SIGNING_KEY = "4@owu(!2yd65ez8en0&32j-h#=@ak3@@1w$z=ju$#8n)1uy&^8"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -49,7 +51,7 @@ INSTALLED_APPS = [
     "plus_planner",
 ]
 
-AUTH_USER_MODEL = "plus_planner.models.account.User"
+AUTH_USER_MODEL = "plus_planner.User"
 
 DEFAULT_AUTHENTICATION_CLASSES = [
     "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -72,7 +74,7 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
-    # "DEFAULT_THROTTLE_RATES": {"anon": "200/day", "user": "2000/day"},
+    "DEFAULT_THROTTLE_RATES": {"anon": "200/day", "user": "2000/day"},
 }
 
 REST_FRAMEWORK_ROLES = {
@@ -84,6 +86,8 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
     "ROTATE_REFRESH_TOKENS": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "SIGNING_KEY": SIGNING_KEY,
+    "UPDATE_LAST_LOGIN": True,
 }
 
 SWAGGER_SETTINGS = {
