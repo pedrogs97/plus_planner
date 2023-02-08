@@ -54,13 +54,13 @@ class User(AbstractBaseUser):
         verbose_name_plural = "users"
 
     def __str__(self) -> str:
-        return f"{self.id} - {self.username}"
+        return self.username
 
-    def get_tokens_for_user(self, user):
+    def get_tokens_for_user(self):
         """
         Get user tokens. Refresh token and access token.
         """
-        refresh = RefreshToken.for_user(user)
+        refresh = RefreshToken.for_user(self)
 
         return {
             "refresh": str(refresh),
@@ -73,6 +73,36 @@ class User(AbstractBaseUser):
         hashing formats behind the scenes. Update password
         """
         return check_password(raw_password, self.password)
+
+    def get_role_by_clinic(self, clinic_id: str) -> str:
+        """
+        Returns user role given specific clinic
+        """
+        try:
+            user_role = ClinicUserRole.objects.only("role_type").get(
+                user_id=self.id, clinic_id=clinic_id
+            )
+            return user_role.role_type
+        except ClinicUserRole.DoesNotExist:
+            return ""
+
+    def get_all_roles(self) -> list:
+        """
+        Returns user role from all linked clinics
+        """
+        try:
+            user_roles = ClinicUserRole.objects.only("clinic", "role_type").filter(
+                user_id=self.id
+            )
+            return [
+                {
+                    "clinic": user_role.clinic.company_name,
+                    "role_type": user_role.role_type,
+                }
+                for user_role in user_roles
+            ]
+        except ClinicUserRole.DoesNotExist:
+            return []
 
 
 class Clinic(models.Model):
@@ -101,12 +131,16 @@ class Clinic(models.Model):
         verbose_name_plural = "clinics"
 
     def __str__(self) -> str:
-        return self.company_name + " - filial" if self.subsidiary else " - matriz"
+        return (
+            f"{self.company_name} - filial"
+            if self.subsidiary
+            else f"{self.company_name} - matriz"
+        )
 
 
-class Role(models.Model):
+class ClinicUserRole(models.Model):
     """
-    Role model
+    Through model for Clinic and User many to many relationship
     """
 
     ROLES_CHOICES = [
@@ -123,30 +157,9 @@ class Role(models.Model):
         NURSE: STR_NURSE,
     }
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    role = models.SmallIntegerField(unique=True, choices=ROLES_CHOICES)
-
-    class Meta:
-        """
-        Role Class Meta
-        """
-
-        db_table = "role"
-        verbose_name = "role"
-        verbose_name_plural = "roles"
-
-    def __str__(self) -> str:
-        return self.PAIR_ROLE_KEY_VALUE[self.role]
-
-
-class ClinicUserRole(models.Model):
-    """
-    Through model for Clinic and User many to many relationship
-    """
-
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    role_type = models.SmallIntegerField(unique=True, choices=ROLES_CHOICES)
 
     class Meta:
         """
@@ -158,6 +171,4 @@ class ClinicUserRole(models.Model):
         verbose_name_plural = "clinic_roles"
 
     def __str__(self) -> str:
-        return (
-            f"{self.user.__str__()} : {self.clinic.__str__()} : {self.role.__str__()}"
-        )
+        return f"{self.user.__str__()} : {self.clinic.__str__()} : {self.PAIR_ROLE_KEY_VALUE[self.role_type]}"

@@ -78,7 +78,7 @@ REST_FRAMEWORK = {
 }
 
 REST_FRAMEWORK_ROLES = {
-    "ROLES": "myproject.roles.ROLES",
+    "ROLES": "plus_planner.utils.roles.ROLES",
 }
 
 SIMPLE_JWT = {

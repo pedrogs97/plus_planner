@@ -1,22 +1,59 @@
+"""
+Class of roles permissions
+"""
 from rest_framework_roles.roles import is_user, is_anon, is_admin
+from plus_planner.models.account import ClinicUserRole
+from plus_planner.utils.constants import MANAGER, DOCTOR, ASSISTANT, NURSE
 
-# TODO a permissão precisa ser:
-# 1. Pertencer a clinica
-# 2. Possuir a role necessária
+
 def is_manager(request, view):
-    return is_user(request, view) and request.user.usertype == "manager"
+    """
+    Check if is manager
+    """
+    clinic_id = request.query_params.get("clinic", None)
+    if clinic_id is None:
+        return False
+    return (
+        is_user(request, view)
+        and (request.user.get_role_by_clinic(clinic_id) == MANAGER)
+        and (request.user.is_clinic)
+    )
 
 
 def is_doctor(request, view):
-    return is_user(request, view) and request.user.usertype == "doctor"
+    """
+    Check if is docter
+    """
+    clinic_id = request.query_params.get("clinic", None)
+    if clinic_id is None:
+        return False
+    return is_user(request, view) and (
+        request.user.get_role_by_clinic(clinic_id) == DOCTOR
+    )
 
 
 def is_assistant(request, view):
-    return is_user(request, view) and request.user.usertype == "assistant"
+    """
+    Check if is assistant
+    """
+    clinic_id = request.query_params.get("clinic", None)
+    if clinic_id is None:
+        return False
+    return is_user(request, view) and (
+        request.user.get_role_by_clinic(clinic_id) == ASSISTANT
+    )
 
 
 def is_nurse(request, view):
-    return is_user(request, view) and request.user.usertype == "nurse"
+    """
+    Check if is nurse
+    """
+    clinic_id = request.query_params.get("clinic", None)
+    if clinic_id is None:
+        return False
+    return is_user(request, view) and (
+        request.user.get_role_by_clinic(clinic_id) == NURSE
+    )
 
 
 ROLES = {
