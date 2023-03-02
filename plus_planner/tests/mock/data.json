@@ -1,0 +1,180 @@
+{
+    "users_test": [
+        {
+            "full_name": "Testador Manager",
+            "username": "testeManager",
+            "email": "testeManager@example.com",
+            "taxpayer_identification": "88888888888",
+            "is_clinic": true,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Assistant",
+            "username": "testeAssistant",
+            "email": "testeAssistant@example.com",
+            "taxpayer_identification": "99999999999",
+            "is_clinic": false,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Doctor",
+            "username": "testeDoctor",
+            "email": "testeDoctor@example.com",
+            "taxpayer_identification": "77777777777",
+            "is_clinic": false,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Nurse",
+            "username": "testeNurse",
+            "email": "testeNurse@example.com",
+            "taxpayer_identification": "6666666666",
+            "is_clinic": false,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Manager Subsidiary",
+            "username": "testeManagerSubsidiary",
+            "email": "testeManagerSubsidiary@example.com",
+            "taxpayer_identification": "55555555555",
+            "is_clinic": true,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Assistant Subsidiary",
+            "username": "testeAssistantSubsidiary",
+            "email": "testeAssistantSubsidiary@example.com",
+            "taxpayer_identification": "44444444444",
+            "is_clinic": false,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Doctor Subsidiary",
+            "username": "testeDoctorSubsidiary",
+            "email": "testeDoctorSubsidiary@example.com",
+            "taxpayer_identification": "33333333333",
+            "is_clinic": false,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Manager MEI",
+            "username": "testeManagerMEI",
+            "email": "testeManagerMEI@example.com",
+            "taxpayer_identification": "22222222222",
+            "is_clinic": true,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Assistant MEI",
+            "username": "testeAssistantMEI",
+            "email": "testeAssistantMEI@example.com",
+            "taxpayer_identification": "11111111111",
+            "is_clinic": false,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Doctor MEI",
+            "username": "testeDoctorMEI",
+            "email": "testeDoctorMEI@example.com",
+            "taxpayer_identification": "00000000000",
+            "is_clinic": false,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Manager Multi Clin",
+            "username": "testeManagerMultiClin",
+            "email": "testeManagerMultiClin@example.com",
+            "taxpayer_identification": "99999999998",
+            "is_clinic": true,
+            "password": "123123"
+        },
+        {
+            "full_name": "Testador Doctor Multi Clin",
+            "username": "testeDoctorMultiClin",
+            "email": "testeDoctorMultiClin@example.com",
+            "taxpayer_identification": "99999999997",
+            "is_clinic": false,
+            "password": "123123"
+        }
+    ],
+    "clinics_test": [
+        {
+            "company_name": "Clinica teste",
+            "taxpayer_identification": "9999999999999",
+            "users": [
+                {
+                    "username": "testeManager",
+                    "role": 1
+                },
+                {
+                    "username": "testeAssistant",
+                    "role": 3
+                },
+                {
+                    "username": "testeDoctor",
+                    "role": 2
+                },
+                {
+                    "username": "testeDoctorMultiClin",
+                    "role": 2
+                },
+                {
+                    "username": "testeNurse",
+                    "role": 4
+                }
+            ]
+        },
+        {
+            "company_name": "Clinica 2 teste",
+            "taxpayer_identification": "8888888888888",
+            "users": [
+                {
+                    "username": "testeManagerMultiClin",
+                    "role": 1
+                },
+                {
+                    "username": "testeDoctorMultiClin",
+                    "role": 2
+                }
+            ]
+        },
+        {
+            "company_name": "Clinica filial teste",
+            "taxpayer_identification": "7777777777777",
+            "subsidiary": true,
+            "users": [
+                {
+                    "username": "testeManagerSubsidiary",
+                    "role": 1
+                },
+                {
+                    "username": "testeAssistantSubsidiary",
+                    "role": 3
+                },
+                {
+                    "username": "testeDoctorSubsidiary",
+                    "role": 2
+                }
+            ]
+        },
+        {
+            "company_name": "Clinica pessoal teste",
+            "taxpayer_identification": "6666666666666",
+            "natural_person": true,
+            "users": [
+                {
+                    "username": "testeManagerMEI",
+                    "role": 1
+                },
+                {
+                    "username": "testeAssistantMEI",
+                    "role": 3
+                },
+                {
+                    "username": "testeDoctorMEI",
+                    "role": 2
+                }
+            ]
+        }
+    ]
+}

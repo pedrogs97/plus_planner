@@ -1,12 +1,21 @@
 """
 Test account module
 """
+import json
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, force_authenticate, APIRequestFactory
 from plus_planner.models.account import User, Clinic, ClinicUserRole
 from plus_planner.views.account import UsersView
-from plus_planner.utils.constants import MANAGER, DOCTOR, ASSISTANT, NURSE
+from plus_planner.utils.constants import (
+    MANAGER,
+    DOCTOR,
+    ASSISTANT,
+    NURSE,
+    ROLES,
+    ADMINISTRATIVE_ROLES,
+    NORMAL_ROLES,
+)
 
 
 class UserTests(APITestCase):
@@ -14,96 +23,117 @@ class UserTests(APITestCase):
     User API test case
     """
 
-    def setUp(self) -> None:
-        super().setUp()
-        self.user_test_manager = User(
-            full_name="Testador",
-            username="teste",
-            email="teste@example.com",
-            taxpayer_identification="99999999999",
-            is_clinic=True,
-        )
-        self.user_test_assistant = User(
-            full_name="Testador",
-            username="teste",
-            email="teste@example.com",
-            taxpayer_identification="99999999999",
-            is_clinic=True,
-        )
-        self.user_test_doctor = User(
-            full_name="Testador",
-            username="teste",
-            email="teste@example.com",
-            taxpayer_identification="99999999999",
-            is_clinic=True,
-        )
-        self.user_test_nurse = User(
-            full_name="Testador",
-            username="teste",
-            email="teste@example.com",
-            taxpayer_identification="99999999999",
-            is_clinic=True,
-        )
-        self.user_test_manager.set_password("123123")
-        self.user_test_manager.save()
-        self.clinic_test = Clinic.objects.create(
-            company_name="Clinica teste",
-            taxpayer_identification="9999999999999",
-        )
-        self.clinic_test.account.add(
-            self.user_test_manager, through_defaults={"role_type": MANAGER}
-        )
-        self.clinic_test.account.add(
-            self.user_test_doctor, through_defaults={"role_type": DOCTOR}
-        )
-        self.clinic_test.account.add(
-            self.user_test_assistant, through_defaults={"role_type": ASSISTANT}
-        )
-        self.clinic_test.account.add(
-            self.user_test_nurse, through_defaults={"role_type": NURSE}
-        )
+    @classmethod
+    def setUpTestData(cls) -> None:
+        with open("plus_planner/tests/mock/data.json", encoding="UTF8") as data:
+            cls.json_data = json.load(data)
+            users_test = cls.json_data["users_test"]
+            clinics_test = cls.json_data["clinics_test"]
+            cls.users = []
+            cls.clinics = []
+            for user_test in users_test:
+                user = User(**user_test)
+                user.set_password(user_test["password"])
+                user.save()
+                cls.users.append(user)
+
+            for clinic_test in clinics_test:
+                clinic = Clinic.objects.create(
+                    company_name=clinic_test["company_name"],
+                    taxpayer_identification=clinic_test["taxpayer_identification"],
+                )
+                for user_clinic in clinic_test["users"]:
+                    clinic.account.add(
+                        User.objects.get(username=user_clinic["username"]),
+                        through_defaults={"role_type": user_clinic["role"]},
+                    )
+                cls.clinics.append(clinic)
 
     def test_login(self):
         """
         Testing login view.
         """
         url = reverse("login")
-        data = {"email": "teste@email.com", "password": "123123"}
-        response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(dict(response.data).keys(), ["access", "refresh"])
+        for user in self.json_data["users_test"]:
+            data = {"email": user["email"], "password": user["password"]}
+            response = self.client.post(url, data, format="json")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertTrue(dict(response.data).keys(), ["access", "refresh"])
 
     def test_refresh_token(self):
         """
         Testing refresh token view.
         """
-        pair_tokens = self.user_test_manager.get_tokens_for_user()
-        url = reverse("token_refresh")
-        data = {"refresh": pair_tokens["refresh"]}
-        response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(dict(response.data).keys(), ["access"])
+        for user in self.users:
+            pair_tokens = user.get_tokens_for_user()
+            url = reverse("token_refresh")
+            data = {"refresh": pair_tokens["refresh"]}
+            response = self.client.post(url, data, format="json")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertTrue(dict(response.data).keys(), ["access"])
 
     def test_list_user(self):
         """
-        Testing refresh token view.
+        Testing list users given a clinc with correct role.
         """
-        # TODO validar para todas as roles
         factory = APIRequestFactory()
         view = UsersView.as_view()
-        pair_tokens = self.user_test_manager.get_tokens_for_user()
-        url = reverse("user_view")
-        request = factory.get(f"{url}?clinic={self.clinic_test.id}")
-        force_authenticate(
-            request, user=self.user_test_manager, token=pair_tokens["access"]
-        )
-        response = view(request)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for clinic in self.clinics:
+            for role in ADMINISTRATIVE_ROLES:
+                clinic_user_role_query = ClinicUserRole.objects.filter(
+                    clinic_id=clinic.id, role_type=role
+                )
+                for administrative_clinic_user_role in clinic_user_role_query:
+                    pair_tokens = (
+                        administrative_clinic_user_role.user.get_tokens_for_user()
+                    )
+                    url = reverse("user_view")
+                    request = factory.get(f"{url}?clinic={clinic.id}")
+                    force_authenticate(
+                        request,
+                        user=administrative_clinic_user_role.user,
+                        token=pair_tokens["access"],
+                    )
+                    response = view(request)
+                    self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_list_user_invalid(self):
+        """
+        Testing list users given a clinc with incorret role.
+        """
+        factory = APIRequestFactory()
+        view = UsersView.as_view()
+        for clinic in self.clinics:
+            for role in NORMAL_ROLES:
+                clinic_user_role_query = ClinicUserRole.objects.filter(
+                    clinic_id=clinic.id, role_type=role
+                )
+                for administrative_clinic_user_role in clinic_user_role_query:
+                    pair_tokens = (
+                        administrative_clinic_user_role.user.get_tokens_for_user()
+                    )
+                    url = reverse("user_view")
+                    request = factory.get(f"{url}?clinic={clinic.id}")
+                    force_authenticate(
+                        request,
+                        user=administrative_clinic_user_role.user,
+                        token=pair_tokens["access"],
+                    )
+                    response = view(request)
+                    self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_user_role(self):
         """
-        Testing refresh token view.
+        Testing get user role. Test for all roles
         """
-        self.assertEqual(
-            self.user_test_manager.get_role_by_clinic(self.clinic_test.id), MANAGER
-        )
+        for user in self.users:
+            for all_roles in user.get_all_roles():
+                self.assertIn(all_roles["role_type"], ROLES)
+
+    def test_get_user_clinic(self):
+        """
+        Testing get user clinic. Test for all clinic
+        """
+        for user in self.users:
+            for clinc in user.get_clinics():
+                self.assertIn(clinc, self.clinics)

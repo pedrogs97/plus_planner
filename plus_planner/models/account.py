@@ -54,7 +54,7 @@ class User(AbstractBaseUser):
         verbose_name_plural = "users"
 
     def __str__(self) -> str:
-        return self.username
+        return f"{self.username}"
 
     def get_tokens_for_user(self):
         """
@@ -74,35 +74,42 @@ class User(AbstractBaseUser):
         """
         return check_password(raw_password, self.password)
 
-    def get_role_by_clinic(self, clinic_id: str) -> str:
+    def get_roles_by_clinic(self, clinic_id: str) -> list:
         """
         Returns user role given specific clinic
         """
-        try:
-            user_role = ClinicUserRole.objects.only("role_type").get(
-                user_id=self.id, clinic_id=clinic_id
-            )
-            return user_role.role_type
-        except ClinicUserRole.DoesNotExist:
-            return ""
+        user_roles = ClinicUserRole.objects.only("role_type").filter(
+            user_id=self.id, clinic_id=clinic_id
+        )
+        if not user_roles.exists():
+            return []
+        return [user_role.role_type for user_role in user_roles]
 
     def get_all_roles(self) -> list:
         """
         Returns user role from all linked clinics
         """
-        try:
-            user_roles = ClinicUserRole.objects.only("clinic", "role_type").filter(
-                user_id=self.id
-            )
-            return [
-                {
-                    "clinic": user_role.clinic.company_name,
-                    "role_type": user_role.role_type,
-                }
-                for user_role in user_roles
-            ]
-        except ClinicUserRole.DoesNotExist:
+        user_roles = ClinicUserRole.objects.only("clinic", "role_type").filter(
+            user_id=self.id
+        )
+        if not user_roles.exists():
             return []
+        return [
+            {
+                "clinic": user_role.clinic.company_name,
+                "role_type": user_role.role_type,
+            }
+            for user_role in user_roles
+        ]
+
+    def get_clinics(self) -> list:
+        """
+        Returns user clinic
+        """
+        user_roles = ClinicUserRole.objects.only("clinic").filter(user_id=self.id)
+        if not user_roles.exists():
+            return []
+        return [user_role.clinic for user_role in user_roles]
 
 
 class Clinic(models.Model):
@@ -159,7 +166,7 @@ class ClinicUserRole(models.Model):
 
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role_type = models.SmallIntegerField(unique=True, choices=ROLES_CHOICES)
+    role_type = models.PositiveSmallIntegerField(choices=ROLES_CHOICES)
 
     class Meta:
         """
@@ -171,4 +178,5 @@ class ClinicUserRole(models.Model):
         verbose_name_plural = "clinic_roles"
 
     def __str__(self) -> str:
-        return f"{self.user.__str__()} : {self.clinic.__str__()} : {self.PAIR_ROLE_KEY_VALUE[self.role_type]}"
+        return f"{self.user.__str__()} : {self.clinic.__str__()}\
+                 : {self.PAIR_ROLE_KEY_VALUE[self.role_type]}"

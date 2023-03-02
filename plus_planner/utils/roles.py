@@ -2,7 +2,6 @@
 Class of roles permissions
 """
 from rest_framework_roles.roles import is_user, is_anon, is_admin
-from plus_planner.models.account import ClinicUserRole
 from plus_planner.utils.constants import MANAGER, DOCTOR, ASSISTANT, NURSE
 
 
@@ -15,7 +14,7 @@ def is_manager(request, view):
         return False
     return (
         is_user(request, view)
-        and (request.user.get_role_by_clinic(clinic_id) == MANAGER)
+        and (MANAGER in request.user.get_roles_by_clinic(clinic_id))
         and (request.user.is_clinic)
     )
 
@@ -28,7 +27,7 @@ def is_doctor(request, view):
     if clinic_id is None:
         return False
     return is_user(request, view) and (
-        request.user.get_role_by_clinic(clinic_id) == DOCTOR
+        DOCTOR in request.user.get_roles_by_clinic(clinic_id)
     )
 
 
@@ -40,7 +39,7 @@ def is_assistant(request, view):
     if clinic_id is None:
         return False
     return is_user(request, view) and (
-        request.user.get_role_by_clinic(clinic_id) == ASSISTANT
+        ASSISTANT in request.user.get_roles_by_clinic(clinic_id)
     )
 
 
@@ -52,7 +51,7 @@ def is_nurse(request, view):
     if clinic_id is None:
         return False
     return is_user(request, view) and (
-        request.user.get_role_by_clinic(clinic_id) == NURSE
+        NURSE in request.user.get_roles_by_clinic(clinic_id)
     )
 
 
