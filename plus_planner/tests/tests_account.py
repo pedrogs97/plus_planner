@@ -80,18 +80,16 @@ class UserTests(APITestCase):
         view = UsersView.as_view()
         for clinic in self.clinics:
             for role in ADMINISTRATIVE_ROLES:
-                clinic_user_role_query = ClinicUserRole.objects.filter(
-                    clinic_id=clinic.id, role_type=role
+                administrative_users = User.objects.filter(
+                    clinic=clinic, clinicuserrole__role_type=role
                 )
-                for administrative_clinic_user_role in clinic_user_role_query:
-                    pair_tokens = (
-                        administrative_clinic_user_role.user.get_tokens_for_user()
-                    )
+                for administrative_user in administrative_users:
+                    pair_tokens = administrative_user.get_tokens_for_user()
                     url = reverse("user_view")
                     request = factory.get(f"{url}?clinic={clinic.id}")
                     force_authenticate(
                         request,
-                        user=administrative_clinic_user_role.user,
+                        user=administrative_user,
                         token=pair_tokens["access"],
                     )
                     response = view(request)
@@ -105,18 +103,16 @@ class UserTests(APITestCase):
         view = UsersView.as_view()
         for clinic in self.clinics:
             for role in NORMAL_ROLES:
-                clinic_user_role_query = ClinicUserRole.objects.filter(
-                    clinic_id=clinic.id, role_type=role
+                administrative_users = User.objects.filter(
+                    clinic=clinic, clinicuserrole__role_type=role
                 )
-                for administrative_clinic_user_role in clinic_user_role_query:
-                    pair_tokens = (
-                        administrative_clinic_user_role.user.get_tokens_for_user()
-                    )
+                for administrative_user in administrative_users:
+                    pair_tokens = administrative_user.get_tokens_for_user()
                     url = reverse("user_view")
                     request = factory.get(f"{url}?clinic={clinic.id}")
                     force_authenticate(
                         request,
-                        user=administrative_clinic_user_role.user,
+                        user=administrative_user,
                         token=pair_tokens["access"],
                     )
                     response = view(request)

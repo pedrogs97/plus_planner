@@ -7,7 +7,7 @@ from django.db import models
 
 from plus_planner.models.account import User, Clinic
 from plus_planner.models.clinical import Pacient, Desk
-from utils.constants import (
+from plus_planner.utils.constants import (
     SCHEDULED,
     CONFIRMED,
     CANCELED,
@@ -19,9 +19,9 @@ from utils.constants import (
 )
 
 
-class Schedule(models.Model):
+class ScheduleEvent(models.Model):
     """
-    Schedule model
+    ScheduleEvent model
     """
 
     STATUS_SCHEDULE_CHOICES = (
@@ -39,11 +39,13 @@ class Schedule(models.Model):
     }
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    status = models.PositiveSmallIntegerField(choices=STATUS_SCHEDULE_CHOICES)
-    date = models.DateTimeField(auto_now=True, auto_created=True)
+    status = models.PositiveSmallIntegerField(
+        choices=STATUS_SCHEDULE_CHOICES, default=SCHEDULED
+    )
+    date = models.DateTimeField(default=datetime.now())
     description = models.CharField(max_length=150, blank=True, null=True)
     is_return = models.BooleanField(default=False)
-    day_off = models.BooleanField(default=True)
+    day_off = models.BooleanField(default=False)
     off_reason = models.CharField(max_length=150, blank=True, null=True)
     account = models.ForeignKey(User, on_delete=models.CASCADE)
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE)
@@ -52,12 +54,12 @@ class Schedule(models.Model):
 
     class Meta:
         """
-        Schedule Class Meta
+        ScheduleEvent Class Meta
         """
 
-        db_table = "schedule"
-        verbose_name = "schedule"
-        verbose_name_plural = "schedules"
+        db_table = "schedule_event"
+        verbose_name = "schedule_event"
+        verbose_name_plural = "schedule_events"
 
     def __str__(self) -> str:
         str_date = datetime.strftime(self.date, "%d/%m/%Y - %H:%M:%S")

@@ -1,11 +1,19 @@
 """
 Clinical models
 """
+from datetime import datetime
 import uuid
 from django.db import models
 
 from plus_planner.models.account import Clinic
-from utils.constants import MALE, FAMALE, OTHER, STR_MALE, STR_FAMALE, STR_OTHER
+from plus_planner.utils.constants import (
+    MALE,
+    FAMALE,
+    OTHER,
+    STR_MALE,
+    STR_FAMALE,
+    STR_OTHER,
+)
 
 
 class Pacient(models.Model):
@@ -27,7 +35,6 @@ class Pacient(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     full_name = models.CharField(max_length=50)
-    age = models.PositiveSmallIntegerField()
     taxypayer_identification = models.CharField(max_length=13)
     birth_date = models.DateField()
     genre = models.PositiveSmallIntegerField(choices=GENRE_CHOICES)
@@ -43,6 +50,19 @@ class Pacient(models.Model):
 
     def __str__(self) -> str:
         return f"{self.full_name} - {self.age}/{self.PAIR_GENRE_KEY_VALUE[self.genre]}"
+
+    @property
+    def age(self):
+        """
+        Return pacient age
+        """
+        today = datetime.today()
+        age = (
+            today.year
+            - self.birth_date.year
+            - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+        )
+        return age
 
 
 class Desk(models.Model):
