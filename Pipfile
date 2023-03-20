@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 django = "==4.1"
 django-cors-headers = "*"
-djangorestframework-simplejwt = "*"
 psycopg2-binary = "*"
 whitenoise = "*"
 pillow = "*"
@@ -17,7 +16,7 @@ python-dateutil = "*"
 drf-yasg = "*"
 sendgrid = "*"
 certifi = "*"
-rest-framework-roles = "*"
+django-rest-knox = "*"
 
 [dev-packages]
 black = "*"

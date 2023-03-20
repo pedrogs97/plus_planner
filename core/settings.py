@@ -9,9 +9,10 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-
 from datetime import timedelta
 from pathlib import Path
+
+from rest_framework.settings import api_settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,18 +44,25 @@ INSTALLED_APPS = [
     # third
     "corsheaders",
     "rest_framework",
-    "rest_framework_roles",
+    "knox",
     "drf_yasg",
     "django_filters",
     "django_extensions",
     # author
-    "plus_planner",
+    "apps.authenticate",
+    "apps.billing",
+    "apps.clinical",
+    "apps.extra",
+    "apps.financy",
+    "apps.marketing",
+    "apps.scheduler",
+    "utils",
 ]
 
-AUTH_USER_MODEL = "plus_planner.User"
+AUTH_USER_MODEL = "authenticate.User"
 
 DEFAULT_AUTHENTICATION_CLASSES = [
-    "rest_framework_simplejwt.authentication.JWTAuthentication",
+    "knox.auth.TokenAuthentication",
 ]
 
 DEFAULT_FILTER_BACKENDS = [
@@ -63,10 +71,15 @@ DEFAULT_FILTER_BACKENDS = [
 
 DEFAULT_PAGINATION_CLASS = "django_filters.rest_framework.DjangoFilterBackend"
 
+DEFAULT_PERMISSION_CLASSES = [
+    "utils.custom_permissions.CustomDjangoModelPermissions",
+]
+
 REST_FRAMEWORK = {
     # Return 'error' key instead of non_field_errors_key
     "NON_FIELD_ERRORS_KEY": "error",
     "DEFAULT_AUTHENTICATION_CLASSES": DEFAULT_AUTHENTICATION_CLASSES,
+    "DEFAULT_PERMISSION_CLASSES": DEFAULT_PERMISSION_CLASSES,
     "DEFAULT_FILTER_BACKENDS": DEFAULT_FILTER_BACKENDS,
     "DEFAULT_PAGINATION_CLASS": DEFAULT_PAGINATION_CLASS,
     "PAGE_SIZE": 12,
@@ -74,26 +87,22 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"anon": "200/day", "user": "2000/day"},
+    "DEFAULT_THROTTLE_RATES": {"anon": "200/day", "user": "30000/day"},
 }
 
-REST_FRAMEWORK_ROLES = {
-    "ROLES": "plus_planner.utils.roles.ROLES",
-}
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=10),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
-    "ROTATE_REFRESH_TOKENS": True,
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "SIGNING_KEY": SIGNING_KEY,
-    "UPDATE_LAST_LOGIN": True,
+REST_KNOX = {
+    "SECURE_HASH_ALGORITHM": "cryptography.hazmat.primitives.hashes.SHA512",
+    "AUTH_TOKEN_CHARACTER_LENGTH": 64,
+    "TOKEN_TTL": timedelta(hours=10),
+    "USER_SERIALIZER": None,
+    "TOKEN_LIMIT_PER_USER": 2,
+    "AUTO_REFRESH": False,
 }
 
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
         "DEFAULT_GENERATOR_CLASS": "rest_framework.schemas.generators.BaseSchemaGenerator",
-        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
+        "Token": {"type": "apiKey", "name": "Authorization", "in": "header"},
     }
 }
 
@@ -136,7 +145,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "PlusPlanner",
+        "NAME": "plus_planner",
         "USER": "postgres",
         "PASSWORD": "Pedro97",
         "HOST": "127.0.0.1",
