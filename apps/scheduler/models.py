@@ -1,13 +1,14 @@
 """
 Schedule models
 """
-import uuid
 from datetime import datetime
 
 from django.db import models
+from tenant_schemas.models import TenantMixin
 
 from apps.authenticate.models import Clinic, User
 from apps.clinical.models import Desk, Pacient
+from utils.base.models import BaseModel
 from utils.constants import (
     CANCELED,
     CONFIRMED,
@@ -20,7 +21,7 @@ from utils.constants import (
 )
 
 
-class ScheduleEvent(models.Model):
+class ScheduleEvent(BaseModel, TenantMixin):
     """
     ScheduleEvent model
     """
@@ -39,11 +40,10 @@ class ScheduleEvent(models.Model):
         FINISHED: STR_FINISHED,
     }
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_SCHEDULE_CHOICES, default=SCHEDULED
     )
-    date = models.DateTimeField(default=datetime.now())
+    date = models.DateTimeField()
     description = models.CharField(max_length=150, blank=True, null=True)
     is_return = models.BooleanField(default=False)
     day_off = models.BooleanField(default=False)

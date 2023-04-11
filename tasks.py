@@ -2,6 +2,7 @@
 File with task to run in CLI
 """
 from datetime import datetime
+
 from invoke import task
 
 
@@ -19,7 +20,7 @@ def migrations(ctx):
     Execute makemigrations and migrate to database
     """
     ctx.run("python manage.py makemigrations")
-    ctx.run("python manage.py migrate")
+    ctx.run("python manage.py migrate_schemas --shared")
 
 
 @task

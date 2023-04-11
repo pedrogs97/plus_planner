@@ -1,16 +1,17 @@
 """
 Clinical models
 """
-import uuid
 from datetime import datetime
 
 from django.db import models
+from tenant_schemas.models import TenantMixin
 
 from apps.authenticate.models import Clinic
+from utils.base.models import BaseModel
 from utils.constants import FAMALE, MALE, OTHER, STR_FAMALE, STR_MALE, STR_OTHER
 
 
-class Pacient(models.Model):
+class Pacient(BaseModel, TenantMixin):
     """
     Pacient model
     """
@@ -27,7 +28,6 @@ class Pacient(models.Model):
         OTHER: STR_OTHER,
     }
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     full_name = models.CharField(max_length=50)
     taxypayer_identification = models.CharField(max_length=13)
     birth_date = models.DateField()
@@ -59,12 +59,11 @@ class Pacient(models.Model):
         return age
 
 
-class Desk(models.Model):
+class Desk(BaseModel, TenantMixin):
     """
     Desk model
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     number = models.PositiveSmallIntegerField()
     vacation = models.BooleanField(default=True)
     observation = models.CharField(max_length=150)

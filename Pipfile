@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "==4.1"
 django-cors-headers = "*"
 psycopg2-binary = "*"
 whitenoise = "*"
@@ -17,6 +16,11 @@ drf-yasg = "*"
 sendgrid = "*"
 certifi = "*"
 django-rest-knox = "*"
+django-tenant-schemas = "*"
+django = "==3.2"
+django-hosts = "*"
+python-dotenv = "*"
+sib-api-v3-sdk = "*"
 
 [dev-packages]
 black = "*"

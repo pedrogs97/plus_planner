@@ -70,6 +70,22 @@ class CustomDjangoModelPermissions(permissions.BasePermission):
         perms = self.get_required_permissions(request.method, queryset.model)
         return request.user.has_perms(perms)
 
+
+class IsOwner(permissions.BasePermission):
+    """
+    Custom permission to only allow owners of an object to edit it.
+    """
+
     def has_object_permission(self, request, view, obj):
         # Check if is the owner of the snippet.
         return obj == request.user
+
+
+class IsAdministrative(permissions.BasePermission):
+    """
+    Custom permission to only allow owners of an object to edit it.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        # Check if is the owner of the snippet.
+        return request.user.is_staff

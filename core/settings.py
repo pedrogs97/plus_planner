@@ -9,10 +9,9 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+from os import environ
 from datetime import timedelta
 from pathlib import Path
-
-from rest_framework.settings import api_settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,11 +30,36 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+ROOT_HOSTCONF = "core.hosts"
+DEFAULT_HOST = "api"
+
+PUBLIC_SCHEMA_URLCONF = "core.urls"
+
+SHARED_APPS = (
+    "tenant_schemas",  # mandatory, should always be before any django app
+    "apps.authenticate",
+    "django.contrib.contenttypes",
+    # everything below here is optional
+    "django.contrib.auth",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+)
+
+TENANT_APPS = (
+    "django.contrib.contenttypes",
+    # your tenant-specific apps
+    "apps.billing",
+    "apps.clinical",
+    "apps.extra",
+    "apps.financy",
+    "apps.marketing",
+    "apps.scheduler",
+)
 
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "tenant_schemas",  # need be first
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -48,6 +72,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "django_filters",
     "django_extensions",
+    "django_hosts",
     # author
     "apps.authenticate",
     "apps.billing",
@@ -59,6 +84,7 @@ INSTALLED_APPS = [
     "utils",
 ]
 
+TENANT_MODEL = "authenticate.Clinic"
 AUTH_USER_MODEL = "authenticate.User"
 
 DEFAULT_AUTHENTICATION_CLASSES = [
@@ -107,6 +133,9 @@ SWAGGER_SETTINGS = {
 }
 
 MIDDLEWARE = [
+    "django_hosts.middleware.HostsRequestMiddleware",
+    "utils.base.middleware.CurrentDomainMiddleware",
+    "tenant_schemas.middleware.TenantMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -116,6 +145,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_hosts.middleware.HostsResponseMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -136,6 +166,8 @@ TEMPLATES = [
     },
 ]
 
+TEMPLATE_CONTEXT_PROCESSORS = ("django.core.context_processors.request",)
+
 WSGI_APPLICATION = "core.wsgi.application"
 
 
@@ -144,14 +176,16 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "plus_planner",
-        "USER": "postgres",
-        "PASSWORD": "Pedro97",
-        "HOST": "127.0.0.1",
-        "PORT": "5432",
+        "ENGINE": environ.get("ENGINE_DB"),
+        "NAME": environ.get("NAME_DB"),
+        "USER": environ.get("USER_DB"),
+        "PASSWORD": environ.get("PASSWORD_DB"),
+        "HOST": environ.get("HOST_DB"),
+        "PORT": environ.get("PORT_DB"),
     }
 }
+
+DATABASE_ROUTERS = ("tenant_schemas.routers.TenantSyncRouter",)
 
 # Password validation
 MIN_LENGTH_PASSWORD = 8
@@ -180,3 +214,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
+
+MEDIA_ROOT = "/data/media"
+MEDIA_URL = "/media/"
+DEFAULT_FILE_STORAGE = "tenant_schemas.storage.TenantFileSystemStorage"
+
+EMAIL_BACKEND = environ.get("EMAIL_BACKEND")
+ANYMAIL = {
+    "SENDINBLUE_API_KEY": environ.get("SMTP_KEY"),
+}
+
+SENDINBLUE_API_URL = environ.get("SMTP_URL")
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST_USER = "pgls.dev@gmail.com"
+EMAIL_HOST_PASSWORD = "lol121197!"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
