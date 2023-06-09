@@ -1,6 +1,5 @@
 """Script to test email API"""
 from __future__ import print_function
-from pprint import pprint
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 

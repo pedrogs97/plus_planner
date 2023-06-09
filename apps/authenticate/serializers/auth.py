@@ -3,20 +3,15 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 from django.contrib.auth.hashers import make_password
-
-# from django.contrib import auth
-# from django.contrib.auth.models import Group, Permission
-# from django.contrib.auth.tokens import PasswordResetTokenGenerator
-# from django.utils.encoding import force_str
-# from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
-
+import re
 from apps.authenticate.models import User
 from apps.authenticate.serializers.credentials import ClinicSerialzier
 from utils.base.serializers import DynamicFieldsModelSerializer
 from utils.email_sender import SendinblueEmailSender
-
-# from rest_framework.exceptions import AuthenticationFailed
 
 
 class UserSerializer(DynamicFieldsModelSerializer):
@@ -144,6 +139,53 @@ class LoginSerializer(serializers.Serializer):
         return None
 
 
+class RegisterUserSerializer(serializers.ModelSerializer):
+    """
+    Register serializer
+
+    Register new user
+    """
+
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirmation = serializers.CharField(write_only=True, min_length=8)
+
+    regex_for_user = re.compile("[=@_!#$%^&*()<>?/\|}{~:]")
+    regex_for_email = re.compile("[=!#$%^&*()<>?/\|}{~:]")
+
+    class Meta:
+        """
+        Class Meta
+        """
+
+        model = User
+
+    def validate(self, data: dict) -> dict:
+        if data["username"] and self.regex_for_user.search(data["username"]) != None:
+            raise serializers.ValidationError(
+                "Invalid username.",
+            )
+
+        if (
+            data["email"]
+            and self.regex_for_email.search(data["email"]) != None
+            and "@" not in data["email"]
+        ):
+            raise serializers.ValidationError(
+                "Invalid email.",
+            )
+
+        if User.objects.filter(email=data["email"]).exists():
+            raise serializers.ValidationError(
+                _("A user is already registered with this e-mail address."),
+            )
+
+        if data["password"] != data["password_confirmation"]:
+            raise serializers.ValidationError(
+                _("The two password fields didn't match.")
+            )
+        return data
+
+
 class ChangePasswordSerializer(serializers.Serializer):
     """Change password Serializer"""
 
@@ -154,20 +196,24 @@ class ChangePasswordSerializer(serializers.Serializer):
     class Meta:
         """Meta Class"""
 
-        fields = ["current_password", "new_password"]
+        fields = ["current_password", "new_password", "user_id"]
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         user = User.objects.get(id=attrs["user_id"])
-        if user.check_password(attrs["current_password"]):
+        if (
+            user.check_password(attrs["current_password"])
+            and attrs["current_password"] != attrs["new_password"]
+        ):
             return attrs
 
         msg = _("Unable to change password.")
         raise ValidationError(msg)
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict):
         """Applies new password"""
         user = User.objects.get(id=validated_data["user_id"])
         user.password = make_password(validated_data["new_password"])
+        user.save()
         return {}
 
     def update(self, instance, validated_data):
@@ -193,17 +239,29 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
         fields = ["email", "clinic_code"]
 
+    def validate(self, attrs):
+        if User.objects.filter(
+            email=attrs["email"],
+            clinic__code=attrs["clinic_code"],
+        ).exists():
+            return super().validate(attrs)
+
+        raise ValidationError("User not found")
+
     def create(self, validated_data):
-        """Applies new password"""
+        """Send email to change password"""
         try:
             user = User.objects.get(
                 email=validated_data["email"],
                 clinic__code=validated_data["clinic_code"],
             )
             email_sender = SendinblueEmailSender()
+            token = default_token_generator.make_token(user)
             email_sender.build_email(
                 {
-                    "html_content": "<html><body><h1>Teste pela classe</h1></body></html>",
+                    "html_content": f"""
+                        <html><body><h1>Teste pela classe
+                        <br>{token}</h1></body></html>""",
                     "subject": "Testando",
                 },
                 {"name": "Sendinblue", "email": "contact@sendinblue.com"},
@@ -220,26 +278,40 @@ class ForgotPasswordSerializer(serializers.Serializer):
         return {}
 
 
-# class NewPasswordSerializer(serializers.Serializer):
-#     password = serializers.CharField(min_length=6, max_length=68, write_only=True)
-#     token = serializers.CharField(min_length=1, write_only=True)
-#     uidb64 = serializers.CharField(min_length=1, write_only=True)
+class NewPasswordSerializer(serializers.Serializer):
+    """Set new password Serializer"""
 
-#     class Meta:
-#         fields = ["password", "token", "id"]
+    password = serializers.CharField(min_length=6, max_length=68, write_only=True)
+    token = serializers.CharField(min_length=1, write_only=True)
+    uid = serializers.CharField(min_length=1, write_only=True)
 
-#     def create(self, validated_data):
-#         try:
-#             password = validated_data.get("password")
-#             token = validated_data.get("token")
-#             uidb64 = validated_data.get("uidb64")
-#             id = force_str(urlsafe_base64_decode(uidb64))
-#             user = User.objects.get(id=id)
-#             if not PasswordResetTokenGenerator().check_token(user, token):
-#                 raise AuthenticationFailed("The reset link is invalid", 401)
-#             user.set_password(password)
-#             user.save()
+    class Meta:
+        """Meta Class"""
 
-#             return {"message": "Password changed successfully"}
-#         except User.DoesNotExist:
-#             raise AuthenticationFailed("The reset link is invalid", 401)
+        fields = ["password", "token", "id"]
+
+    def validate(self, attrs):
+        try:
+            uid = force_str(urlsafe_base64_decode(attrs["uid"]))
+            user = User.objects.get(id=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist) as exc:
+            raise ValidationError("Invalid") from exc
+
+        if not default_token_generator.check_token(user, attrs["token"]):
+            raise ValidationError("Invalid")
+
+        return attrs
+
+    def create(self, validated_data):
+        """Set new password"""
+        password = validated_data["password"]
+        uid = force_str(urlsafe_base64_decode(validated_data["uid"]))
+        user = User.objects.get(id=uid)
+        user.set_password(password)
+        user.save()
+
+        return {"message": "Password changed successfully"}
+
+    def update(self, instance, validated_data):
+        """Not implmented"""
+        return {}

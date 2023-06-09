@@ -4,11 +4,10 @@ Authenticate models
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.hashers import check_password
-from django.contrib.auth.models import Group
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.http.request import split_domain_port
-from tenant_schemas.models import TenantMixin
+from django.core.exceptions import ObjectDoesNotExist
 
 from utils.base.mixins import BasePermissionsMixin
 from utils.base.models import BaseModel
@@ -20,9 +19,7 @@ from utils.constants import (
     FINANCY,
     MARKETING,
     MAX_CLINIC_CODE,
-    MAX_LICENSE_CODE,
     MIN_CLINIC_CODE,
-    MIN_LICENSE_CODE,
     SCHEDULER,
     STR_BILLING,
     STR_CLINICAL,
@@ -34,6 +31,7 @@ from utils.constants import (
     USER,
 )
 from utils.images import OverwriteImage, upload_to
+from apps.billing.models import License
 
 CLINIC_DOMAINS_CACHE = {}
 
@@ -55,7 +53,7 @@ class DomainManager(models.Manager):
             if host not in CLINIC_DOMAINS_CACHE:
                 CLINIC_DOMAINS_CACHE[host] = self.get(domain__iexact=host)
             return CLINIC_DOMAINS_CACHE[host]
-        except Clinic.DoesNotExist:
+        except ObjectDoesNotExist:
             domain, _ = split_domain_port(host)
             if domain not in CLINIC_DOMAINS_CACHE:
                 CLINIC_DOMAINS_CACHE[domain] = self.get(domain__iexact=domain)
@@ -84,7 +82,7 @@ class User(AbstractBaseUser, BaseModel, BasePermissionsMixin):
     """
 
     full_name = models.CharField(max_length=255)
-    username = models.CharField(max_length=255, unique=True)
+    username = models.CharField(max_length=50, unique=True)
     email = models.EmailField(max_length=255, unique=True)
     taxpayer_identification = models.CharField(max_length=13, unique=True)
     image = models.ImageField(
@@ -97,8 +95,6 @@ class User(AbstractBaseUser, BaseModel, BasePermissionsMixin):
     is_clinic = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-
-    teams = models.ManyToManyField("Team")
 
     USERNAME_FIELD = "email"
 
@@ -130,35 +126,6 @@ class User(AbstractBaseUser, BaseModel, BasePermissionsMixin):
         return clinics
 
 
-class License(BaseModel):
-    """License model"""
-
-    code = models.PositiveIntegerField(
-        unique=True,
-        validators=[
-            MaxValueValidator(MIN_LICENSE_CODE),
-            MinValueValidator(MAX_LICENSE_CODE),
-        ],
-    )
-    validity = models.DateField()
-    trail = models.BooleanField(default=False)
-    payment_date = models.DateField()
-
-    class Meta:
-        """
-        License Class Meta
-        """
-
-        db_table = "license"
-        verbose_name = "license"
-        verbose_name_plural = "licenses"
-
-    @property
-    def modules(self) -> list[str]:
-        """Returns all modules(str) in license"""
-        return [str(module) for module in Module.objects.filter(license__id=self.id)]
-
-
 class Module(BaseModel):
     """Modules model"""
 
@@ -188,7 +155,7 @@ class Module(BaseModel):
         return f"{DICT_MODULE_TO_STRING[self.module]}"
 
 
-class Clinic(BaseModel, TenantMixin):
+class Clinic(BaseModel):
     """
     Clinic model
     """
@@ -208,6 +175,7 @@ class Clinic(BaseModel, TenantMixin):
         "self", related_name="branch", null=True, on_delete=models.PROTECT
     )
     license = models.OneToOneField(License, on_delete=models.CASCADE)
+    domain = models.CharField(max_length=150, unique=True, default="admin")
 
     objects = DomainManager()
 
@@ -231,18 +199,3 @@ class Clinic(BaseModel, TenantMixin):
     def is_branch(self) -> bool:
         """Returns if is branch clinic"""
         return self.headquarters is not None
-
-
-class Team(Group):
-    """Custom group model"""
-
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, null=False)
-
-    class Meta:
-        """
-        Team Class Meta
-        """
-
-        db_table = "team"
-        verbose_name = "team"
-        verbose_name_plural = "teams"

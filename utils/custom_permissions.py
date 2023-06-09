@@ -14,13 +14,13 @@ class CustomDjangoModelPermissions(permissions.BasePermission):
 
     # Map methods into required permission codes.
     perms_map = {
-        "GET": ["%(app_label)s.view_%(model_name)s"],
+        "GET": ["view_%(model_name)s"],
         "OPTIONS": [],
         "HEAD": [],
-        "POST": ["%(app_label)s.add_%(model_name)s"],
-        "PUT": ["%(app_label)s.change_%(model_name)s"],
-        "PATCH": ["%(app_label)s.change_%(model_name)s"],
-        "DELETE": ["%(app_label)s.delete_%(model_name)s"],
+        "POST": ["add_%(model_name)s"],
+        "PUT": ["change_%(model_name)s"],
+        "PATCH": ["change_%(model_name)s"],
+        "DELETE": ["delete_%(model_name)s"],
     }
 
     authenticated_users_only = True
@@ -31,7 +31,6 @@ class CustomDjangoModelPermissions(permissions.BasePermission):
         codes that the user is required to have.
         """
         kwargs = {
-            "app_label": model_cls._meta.app_label,
             "model_name": model_cls._meta.model_name,
         }
 
@@ -65,7 +64,11 @@ class CustomDjangoModelPermissions(permissions.BasePermission):
             not request.user.is_authenticated and self.authenticated_users_only
         ):
             return False
-
+        if (
+            not request.clinic
+            or not request.clinic.account.all().filter(id=request.user.id).exist()
+        ):
+            return False
         queryset = self._queryset(view)
         perms = self.get_required_permissions(request.method, queryset.model)
         return request.user.has_perms(perms)
@@ -79,13 +82,3 @@ class IsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # Check if is the owner of the snippet.
         return obj == request.user
-
-
-class IsAdministrative(permissions.BasePermission):
-    """
-    Custom permission to only allow owners of an object to edit it.
-    """
-
-    def has_object_permission(self, request, view, obj):
-        # Check if is the owner of the snippet.
-        return request.user.is_staff

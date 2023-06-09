@@ -10,10 +10,10 @@ class SendinblueEmailSender:
 
     def __init__(self) -> None:
         """Init Email sender."""
-        if settings.SMTP_KEY is None or settings.SMTP_KEY == "":
+        if settings.API_KEY is None or settings.API_KEY == "":
             raise ValueError("API KEY empty.")
         self.__configuration = sib_api_v3_sdk.Configuration()
-        self.__configuration.api_key["api-key"] = settings.SMTP_KEY
+        self.__configuration.api_key["api-key"] = settings.API_KEY
 
         self.__api_instance_transactional = sib_api_v3_sdk.TransactionalEmailsApi(
             sib_api_v3_sdk.ApiClient(self.__configuration)

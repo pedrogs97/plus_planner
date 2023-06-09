@@ -4,14 +4,13 @@ Clinical models
 from datetime import datetime
 
 from django.db import models
-from tenant_schemas.models import TenantMixin
 
 from apps.authenticate.models import Clinic
 from utils.base.models import BaseModel
 from utils.constants import FAMALE, MALE, OTHER, STR_FAMALE, STR_MALE, STR_OTHER
 
 
-class Pacient(BaseModel, TenantMixin):
+class Pacient(BaseModel):
     """
     Pacient model
     """
@@ -59,7 +58,7 @@ class Pacient(BaseModel, TenantMixin):
         return age
 
 
-class Desk(BaseModel, TenantMixin):
+class Desk(BaseModel):
     """
     Desk model
     """
@@ -80,3 +79,24 @@ class Desk(BaseModel, TenantMixin):
 
     def __str__(self) -> str:
         return f"{self.number} - {self.vacation.__str__()}"
+
+
+class Plan(BaseModel):
+    """
+    Plan model
+    """
+
+    name = models.CharField(max_length=50)
+    number = models.PositiveSmallIntegerField()
+
+    class Meta:
+        """
+        Plan Class Meta
+        """
+
+        db_table = "plan"
+        verbose_name = "plan"
+        verbose_name_plural = "plans"
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.number}"

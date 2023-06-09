@@ -53,7 +53,7 @@ class ModuleSerializer(serializers.ModelSerializer):
         """Meta class"""
 
         model = Module
-        fields = "__all__"
+        field = "__all__"
 
 
 class LicenseSerialzier(serializers.ModelSerializer):

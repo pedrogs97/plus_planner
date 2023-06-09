@@ -4,7 +4,6 @@ Schedule models
 from datetime import datetime
 
 from django.db import models
-from tenant_schemas.models import TenantMixin
 
 from apps.authenticate.models import Clinic, User
 from apps.clinical.models import Desk, Pacient
@@ -21,7 +20,7 @@ from utils.constants import (
 )
 
 
-class ScheduleEvent(BaseModel, TenantMixin):
+class ScheduleEvent(BaseModel):
     """
     ScheduleEvent model
     """

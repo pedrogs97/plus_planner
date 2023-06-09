@@ -9,4 +9,4 @@ class CurrentDomainMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
         """Proccess request to add domain"""
-        request.domain = Clinic.objects.get_current(request)
+        request.clinic = Clinic.objects.get_current(request)

@@ -33,33 +33,11 @@ ALLOWED_HOSTS = ["*"]
 ROOT_HOSTCONF = "core.hosts"
 DEFAULT_HOST = "api"
 
-PUBLIC_SCHEMA_URLCONF = "core.urls"
-
-SHARED_APPS = (
-    "tenant_schemas",  # mandatory, should always be before any django app
-    "apps.authenticate",
-    "django.contrib.contenttypes",
-    # everything below here is optional
-    "django.contrib.auth",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-)
-
-TENANT_APPS = (
-    "django.contrib.contenttypes",
-    # your tenant-specific apps
-    "apps.billing",
-    "apps.clinical",
-    "apps.extra",
-    "apps.financy",
-    "apps.marketing",
-    "apps.scheduler",
-)
-
+ROLEPERMISSIONS_MODULE = "apps.authenticate.roles"
+ROLEPERMISSIONS_SUPERUSER_SUPERPOWERS = False
 # Application definition
 
 INSTALLED_APPS = [
-    "tenant_schemas",  # need be first
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -73,6 +51,7 @@ INSTALLED_APPS = [
     "django_filters",
     "django_extensions",
     "django_hosts",
+    "rolepermissions",
     # author
     "apps.authenticate",
     "apps.billing",
@@ -84,7 +63,6 @@ INSTALLED_APPS = [
     "utils",
 ]
 
-TENANT_MODEL = "authenticate.Clinic"
 AUTH_USER_MODEL = "authenticate.User"
 
 DEFAULT_AUTHENTICATION_CLASSES = [
@@ -135,7 +113,6 @@ SWAGGER_SETTINGS = {
 MIDDLEWARE = [
     "django_hosts.middleware.HostsRequestMiddleware",
     "utils.base.middleware.CurrentDomainMiddleware",
-    "tenant_schemas.middleware.TenantMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -185,7 +162,6 @@ DATABASES = {
     }
 }
 
-DATABASE_ROUTERS = ("tenant_schemas.routers.TenantSyncRouter",)
 
 # Password validation
 MIN_LENGTH_PASSWORD = 8
@@ -217,17 +193,3 @@ STATIC_URL = "static/"
 
 MEDIA_ROOT = "/data/media"
 MEDIA_URL = "/media/"
-DEFAULT_FILE_STORAGE = "tenant_schemas.storage.TenantFileSystemStorage"
-
-EMAIL_BACKEND = environ.get("EMAIL_BACKEND")
-ANYMAIL = {
-    "SENDINBLUE_API_KEY": environ.get("SMTP_KEY"),
-}
-
-SENDINBLUE_API_URL = environ.get("SMTP_URL")
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_HOST_USER = "pgls.dev@gmail.com"
-EMAIL_HOST_PASSWORD = "lol121197!"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False

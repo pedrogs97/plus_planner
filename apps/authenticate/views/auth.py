@@ -8,7 +8,6 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView
-
 from apps.authenticate.serializers.auth import (
     LoginSerializer,
     UserSerializer,
@@ -60,12 +59,23 @@ class MeView(RetrieveUpdateAPIView):
     serializer_class = UserSerializer
 
 
-class ChangePasswordView(RetrieveUpdateAPIView):
+class ChangePasswordView(CreateAPIView):
     """View to update password"""
 
     authentication_classes = (TokenAuthentication,)
     permission_classes = (CustomDjangoModelPermissions, IsOwner)
     serializer_class = ChangePasswordSerializer
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data["user_id"] = request.user.id
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
 
 class ForgotPasswordView(CreateAPIView):
@@ -75,6 +85,12 @@ class ForgotPasswordView(CreateAPIView):
     permission_classes = IsOwner
     serializer_class = ForgotPasswordSerializer
 
-    def post(self, request, format=None):
+    def create(self, request, *args, **kwargs):
         """Method POST to request forgot password"""
-        pass
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
