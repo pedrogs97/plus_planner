@@ -54,17 +54,22 @@ class DomainManager(models.Manager):
                 CLINIC_DOMAINS_CACHE[host] = self.get(domain__iexact=host)
             return CLINIC_DOMAINS_CACHE[host]
         except ObjectDoesNotExist:
-            domain, _ = split_domain_port(host)
-            if domain not in CLINIC_DOMAINS_CACHE:
-                CLINIC_DOMAINS_CACHE[domain] = self.get(domain__iexact=domain)
-            return CLINIC_DOMAINS_CACHE[domain]
+            try:
+                domain, _ = split_domain_port(host)
+                if domain not in CLINIC_DOMAINS_CACHE:
+                    CLINIC_DOMAINS_CACHE[domain] = self.get(domain__iexact=domain)
+                return CLINIC_DOMAINS_CACHE[domain]
+            except ObjectDoesNotExist:
+                return None
 
     def get_current(self, request=None, clinic_id=None):
         """Rerturn currente domain"""
         if clinic_id:
             return self._get_domain_by_id(clinic_id)
-        elif request:
+        if request:
             return self._get_domain_by_request(request)
+
+        return None
 
     def clear_cache(self):
         """Clear domians in cache"""

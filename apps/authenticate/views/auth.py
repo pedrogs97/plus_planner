@@ -47,8 +47,7 @@ class LoginView(KnoxLoginView):
             user_logged_in.send(sender=user.__class__, request=request, user=user)
             data = self.get_post_response_data(request, token, instance)
             return Response(data)
-        else:
-            return Response(serliazer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serliazer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MeView(RetrieveUpdateAPIView):

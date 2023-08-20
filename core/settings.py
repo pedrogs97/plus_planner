@@ -172,8 +172,6 @@ SPECIAL_CHAR = ["!", "@", "#", "_", ".", "+", "-", "*"]
 
 LANGUAGE_CODE = "en-us"
 
-LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "America/Bahia"
 
 USE_I18N = True

@@ -1,4 +1,5 @@
 """Authenticate serializers for auth"""
+import re
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
@@ -7,11 +8,11 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
-import re
 from apps.authenticate.models import User
 from apps.authenticate.serializers.credentials import ClinicSerialzier
 from utils.base.serializers import DynamicFieldsModelSerializer
 from utils.email_sender import SendinblueEmailSender
+from django.core.exceptions import ObjectDoesNotExist
 
 
 class UserSerializer(DynamicFieldsModelSerializer):
@@ -107,21 +108,21 @@ class LoginSerializer(serializers.Serializer):
     """
 
     email = serializers.EmailField(required=True, allow_blank=False)
-    clinic_code = serializers.IntegerField(required=True)
+    clinic = serializers.IntegerField(required=True)
     password = serializers.CharField(
         required=True, style={"input_type": "password"}, allow_blank=False
     )
 
     def validate(self, attrs):
         email = attrs.pop("email", "")
-        clinic_code = attrs.pop("clinc_id", "")
+        clinic_code = attrs.pop("clinic", "")
         password = attrs.pop("password", "")
         if email == "" or clinic_code == "" or password == "":
             msg = _("No credentials provided.")
             raise ValidationError(msg)
         try:
             user = User.objects.get(email=email, clinic__code=clinic_code)
-        except User.DoesNotExist as user_does_not_exist:
+        except ObjectDoesNotExist as user_does_not_exist:
             msg = _("Unable to log in with provided credentials.")
             raise ValidationError(msg) from user_does_not_exist
 
@@ -149,8 +150,8 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirmation = serializers.CharField(write_only=True, min_length=8)
 
-    regex_for_user = re.compile("[=@_!#$%^&*()<>?/\|}{~:]")
-    regex_for_email = re.compile("[=!#$%^&*()<>?/\|}{~:]")
+    regex_for_user = re.compile(r"[=@_!#$%^&*()<>?/\|}{~:]")
+    regex_for_email = re.compile(r"[=!#$%^&*()<>?/\|}{~:]")
 
     class Meta:
         """
@@ -159,31 +160,34 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
         model = User
 
-    def validate(self, data: dict) -> dict:
-        if data["username"] and self.regex_for_user.search(data["username"]) != None:
+    def validate(self, attrs: dict) -> dict:
+        if (
+            attrs["username"]
+            and self.regex_for_user.search(attrs["username"]) is not None
+        ):
             raise serializers.ValidationError(
                 "Invalid username.",
             )
 
         if (
-            data["email"]
-            and self.regex_for_email.search(data["email"]) != None
-            and "@" not in data["email"]
+            attrs["email"]
+            and self.regex_for_email.search(attrs["email"]) is not None
+            and "@" not in attrs["email"]
         ):
             raise serializers.ValidationError(
                 "Invalid email.",
             )
 
-        if User.objects.filter(email=data["email"]).exists():
+        if User.objects.filter(email=attrs["email"]).exists():
             raise serializers.ValidationError(
                 _("A user is already registered with this e-mail address."),
             )
 
-        if data["password"] != data["password_confirmation"]:
+        if attrs["password"] != attrs["password_confirmation"]:
             raise serializers.ValidationError(
                 _("The two password fields didn't match.")
             )
-        return data
+        return attrs
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -269,7 +273,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
                 [{"name": user.full_name, "email": user.email}],
             )
             email_sender.send_email()
-        except User.DoesNotExist:
+        except ObjectDoesNotExist:
             return {}
         return {}
 
@@ -294,7 +298,7 @@ class NewPasswordSerializer(serializers.Serializer):
         try:
             uid = force_str(urlsafe_base64_decode(attrs["uid"]))
             user = User.objects.get(id=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist) as exc:
+        except (TypeError, ValueError, OverflowError, ObjectDoesNotExist) as exc:
             raise ValidationError("Invalid") from exc
 
         if not default_token_generator.check_token(user, attrs["token"]):

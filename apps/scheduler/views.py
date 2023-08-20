@@ -2,10 +2,7 @@
 from rest_framework.viewsets import ModelViewSet
 from knox.auth import TokenAuthentication
 from apps.scheduler.serializers import ScheduleEventSerializer
-from utils.custom_permissions import (
-    CustomDjangoModelPermissions,
-    IsOwner,
-)
+from utils.custom_permissions import CustomDjangoModelPermissions
 
 
 class ScheduleEventViewset(ModelViewSet):
@@ -16,5 +13,5 @@ class ScheduleEventViewset(ModelViewSet):
     """
 
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (CustomDjangoModelPermissions, IsOwner)
+    permission_classes = CustomDjangoModelPermissions
     serializer_class = ScheduleEventSerializer

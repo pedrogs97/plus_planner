@@ -14,17 +14,17 @@ from apps.authenticate.views.credentials import (
 app_name = "authenticate"
 
 router = routers.DefaultRouter()
-router.register(r"users-admin", UsersAdminViewset)
-router.register(r"users", UserViewset)
-router.register(r"clinics-admin", ClinicAdminViewset)
-router.register(r"clinics", ClinicViewset)
+router.register(r"users-admin/", UsersAdminViewset)
+router.register(r"users/", UserViewset)
+router.register(r"clinics-admin/", ClinicAdminViewset)
+router.register(r"clinics/", ClinicViewset)
 
 
 urlpatterns = [
-    path("login/", LoginView.as_view(), name="login"),
-    path("logout/", knox_views.LogoutView.as_view(), name="knox_logout"),
-    path("logoutall/", knox_views.LogoutAllView.as_view(), name="knox_logoutall"),
-    path("", include(router.urls)),
+    path(r"login/", LoginView.as_view(), name="login"),
+    path(r"logout/", knox_views.LogoutView.as_view(), name="logout"),
+    path(r"logoutall/", knox_views.LogoutAllView.as_view(), name="logout_all"),
+    path(r"", include(router.urls)),
 ]
 
 

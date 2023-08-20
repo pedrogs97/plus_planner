@@ -31,6 +31,7 @@ class Pacient(BaseModel):
     taxypayer_identification = models.CharField(max_length=13)
     birth_date = models.DateField()
     genre = models.PositiveSmallIntegerField(choices=GENRE_CHOICES)
+    treatments = models.ManyToManyField("clinical.Treatment")
 
     class Meta:
         """
@@ -52,7 +53,7 @@ class Pacient(BaseModel):
         today = datetime.today()
         age = (
             today.year
-            - self.birth_date.year
+            - self.birth_date.yearp
             - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
         )
         return age
@@ -100,3 +101,49 @@ class Plan(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.name} - {self.number}"
+
+
+class Treatment(BaseModel):
+    """
+    Treatment model
+    """
+
+    name = models.CharField(max_length=50)
+    number = models.PositiveSmallIntegerField()
+    description = models.CharField(max_length=50, default="")
+    cost = models.DecimalField(decimal_places=2, max_digits=6, default=0.0)
+
+    class Meta:
+        """
+        Treatment Class Meta
+        """
+
+        db_table = "treatment"
+        verbose_name = "treatment"
+        verbose_name_plural = "treatments"
+
+    def __str__(self) -> str:
+        return f"{self.name}/{self.number} - {self.cost}"
+
+
+class Urgency(BaseModel):
+    """
+    Urgency model
+    """
+
+    date = models.DateField()
+    description = models.CharField(max_length=50, default="")
+    pacient = models.ForeignKey(Pacient, on_delete=models.CASCADE)
+    treatment = models.ForeignKey(Treatment, on_delete=models.CASCADE)
+
+    class Meta:
+        """
+        Urgency Class Meta
+        """
+
+        db_table = "urgency"
+        verbose_name = "urgency"
+        verbose_name_plural = "urgences"
+
+    def __str__(self) -> str:
+        return f"{self.description} - {self.date.strftime('%d/%m/%Y')}"

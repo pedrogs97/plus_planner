@@ -1,7 +1,7 @@
 """Class of authenticate module view"""
 from knox.auth import TokenAuthentication
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, AllowAny
 from apps.authenticate.serializers.auth import UserSerializer, ClinicSerialzier
 from apps.authenticate.models import User, Clinic
 from utils.custom_permissions import CustomDjangoModelPermissions
@@ -20,7 +20,7 @@ class UserViewset(ModelViewSet):
     """All users views for clinics."""
 
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (CustomDjangoModelPermissions,)
+    permission_classes = (AllowAny,)
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
